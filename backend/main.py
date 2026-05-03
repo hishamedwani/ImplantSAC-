@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.routers.cases import router as cases_router
 
 app = FastAPI(
     title="ImplantSAC API",
@@ -15,9 +16,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(cases_router, prefix="/api/cases")
+
+
 @app.get("/")
 def root():
     return {"status": "ImplantSAC API is running"}
+
 
 @app.get("/health")
 def health():
