@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers.cases import router as cases_router
+from app.db.init_db import init_db
 
 app = FastAPI(
     title="ImplantSAC API",
@@ -17,6 +18,11 @@ app.add_middleware(
 )
 
 app.include_router(cases_router, prefix="/api/cases")
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 
 @app.get("/")
