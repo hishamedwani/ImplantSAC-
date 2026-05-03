@@ -10,15 +10,17 @@ def compute_measurements(
 ) -> dict:
     """
     Compute all 5 clinical measurements from the local region.
+    Works on the best 2D axial slice within the local region,
+    consistent with how ToothSeg notebook validated measurements.
 
     Args:
         local_volume: Cropped HU volume around implant site
         local_seg:    Cropped segmentation around implant site
         spacing:      (sx, sy, sz) real voxel spacing in mm
-        is_molar:     Whether the implant site is a molar (enables septum)
+        is_molar:     Whether the implant site is a molar
 
     Returns:
-        Dictionary of measurements in mm and raw values
+        Dictionary of measurements in mm
     """
     assert local_volume.shape == local_seg.shape, \
         "Volume and segmentation shape mismatch"
@@ -26,17 +28,33 @@ def compute_measurements(
         "Spacing must be positive"
 
     sx, sy, sz = spacing
-    cx = local_volume.shape[1] // 2
-    cy = local_volume.shape[2] // 2
-    cz = local_volume.shape[0] // 2
+
+    # Find the best 2D slice — most teeth voxels
+    teeth_vol = (local_seg == 1)
+    teeth_per_slice = teeth_vol.sum(axis=(1, 2))
+
+    if teeth_per_slice.max() == 0:
+        # No teeth found — use center slice
+        z = local_volume.shape[0] // 2
+    else:
+        z = int(np.argmax(teeth_per_slice))
+
+    # Work on the best 2D slice
+    img_2d = local_volume[z]
+    seg_2d = local_seg[z]
+
+    cx = img_2d.shape[0] // 2
+    cy = img_2d.shape[1] // 2
 
     # Bone mask from HU threshold
-    bone_mask = local_volume > 200
+    bone_2d = img_2d > 200
 
     # Teeth mask from segmentation
-    teeth_mask = (local_seg == 1)
-    teeth_zone = ndi.binary_dilation(teeth_mask, iterations=4)
-    bone_near_teeth = bone_mask & teeth_zone
+    teeth_2d = (seg_2d == 1)
+    teeth_zone = ndi.binary_dilation(teeth_2d, iterations=4)
+
+    # Restrict bone to near teeth
+    bone = bone_2d & teeth_zone
 
     results = {}
 
@@ -44,14 +62,13 @@ def compute_measurements(
     # 1. APICAL BONE AVAILABILITY
     # Measure continuous bone below implant apex along vertical axis
     # ------------------------------------------------------------------
-    col = bone_near_teeth[:, cx, cy]
+    col = bone[:, cy]
     indices = np.where(col > 0)[0]
     if len(indices) > 0:
-        apical_px = indices[-1] - cz
-        apical_px = max(0, apical_px)
+        apical_px = max(0, indices[-1] - cx)
     else:
         apical_px = 0
-    apical_mm = float(apical_px) * sz
+    apical_mm = float(apical_px) * sx
     assert apical_mm >= 0, "Apical bone cannot be negative"
     results["apical_bone_mm"] = round(apical_mm, 2)
 
@@ -59,8 +76,8 @@ def compute_measurements(
     # 2. BUCCAL WALL THICKNESS
     # Measure bone thickness on the buccal (outer) side
     # ------------------------------------------------------------------
-    row = bone_near_teeth[cz, cx, :cy]
-    indices = np.where(row > 0)[0]
+    front = bone[cx, :cy]
+    indices = np.where(front > 0)[0]
     buccal_px = len(indices) if len(indices) > 0 else 0
     buccal_mm = float(buccal_px) * sy
     assert buccal_mm >= 0, "Buccal thickness cannot be negative"
@@ -70,7 +87,7 @@ def compute_measurements(
     # 3. BUCCOLINGUAL RIDGE WIDTH
     # Measure total horizontal bone span at crest level
     # ------------------------------------------------------------------
-    row = bone_near_teeth[cz, cx, :]
+    row = bone[cx, :]
     indices = np.where(row > 0)[0]
     if len(indices) > 1:
         ridge_px = indices[-1] - indices[0]
@@ -82,10 +99,10 @@ def compute_measurements(
 
     # ------------------------------------------------------------------
     # 4. INTERRADICULAR SEPTUM WIDTH (molars only)
-    # Measure minimum distance between root centroids
+    # Measure minimum distance between root centroids in mm
     # ------------------------------------------------------------------
     if is_molar:
-        labeled_teeth, num_teeth = ndi.label(teeth_mask[cz])
+        labeled_teeth, num_teeth = ndi.label(teeth_2d)
         if num_teeth >= 2:
             centers = []
             for i in range(1, num_teeth + 1):
@@ -111,8 +128,8 @@ def compute_measurements(
     # 5. PERIAPICAL LESION STATUS
     # Detect low-density regions inside bone near apex
     # ------------------------------------------------------------------
-    low_density = local_volume < 100
-    bone_eroded = ndi.binary_erosion(bone_mask, iterations=1)
+    low_density = img_2d < 100
+    bone_eroded = ndi.binary_erosion(bone_2d, iterations=1)
     candidate = low_density & bone_eroded
     labeled, num = ndi.label(candidate)
     lesion_detected = False
@@ -120,13 +137,12 @@ def compute_measurements(
     if num > 0:
         sizes = [np.sum(labeled == i) for i in range(1, num + 1)]
         max_size_px = max(sizes)
-        voxel_volume_mm3 = sx * sy * sz
-        max_size_mm3 = max_size_px * voxel_volume_mm3
-        # Threshold: lesion must be larger than 80 voxels worth at 0.4mm
-        threshold_mm3 = 80 * (0.4 ** 3)
-        if max_size_mm3 > threshold_mm3:
+        voxel_area_mm2 = sx * sy
+        max_size_mm2 = max_size_px * voxel_area_mm2
+        threshold_mm2 = 80 * (0.4 ** 2)
+        if max_size_mm2 > threshold_mm2:
             lesion_detected = True
-            lesion_size_mm3 = round(max_size_mm3, 2)
+            lesion_size_mm3 = round(max_size_mm2, 2)
 
     results["lesion_detected"] = lesion_detected
     results["lesion_size_mm3"] = lesion_size_mm3

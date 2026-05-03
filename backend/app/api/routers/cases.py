@@ -1,11 +1,12 @@
 import os
 import uuid
 import shutil
+import numpy as np
+import scipy.ndimage as ndi
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 
 from app.core.cbct_loader import load_cbct
-from app.pipeline.region_extractor import get_missing_tooth_location, extract_local_region
 from app.pipeline.measurements import compute_measurements
 from app.classification.sac_classifier import classify_sac
 
@@ -18,78 +19,131 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
+def get_best_slice_and_site(segmentation: np.ndarray) -> tuple[int, int, int]:
+    """
+    Find best axial slice and missing tooth location.
+    Replicates notebook logic exactly — works in 2D on best slice.
+    """
+    teeth_vol = (segmentation == 1)
+    teeth_per_slice = teeth_vol.sum(axis=(1, 2))
+    z = int(np.argmax(teeth_per_slice))
+
+    teeth_2d = teeth_vol[z]
+    labeled, num = ndi.label(teeth_2d)
+
+    assert num >= 2, "Need at least 2 tooth regions to detect a gap"
+
+    centroids = []
+    for i in range(1, num + 1):
+        coords = np.argwhere(labeled == i)
+        centroids.append(coords.mean(axis=0))
+
+    centroids = np.array(centroids)
+    centroids = centroids[np.argsort(centroids[:, 1])]
+
+    distances = np.linalg.norm(np.diff(centroids, axis=0), axis=1)
+    gap_idx = int(np.argmax(distances))
+
+    missing = (centroids[gap_idx] + centroids[gap_idx + 1]) / 2
+    x, y = int(missing[0]), int(missing[1])
+
+    return z, x, y
+
+
+def extract_2d_patch(
+    volume: np.ndarray,
+    segmentation: np.ndarray,
+    z: int, x: int, y: int,
+    spacing: tuple[float, float, float],
+    window_mm: float = 20.0
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Extract 2D patch around implant site on the best slice.
+    Window size in mm converted to pixels using real spacing.
+    """
+    sx, sy, _ = spacing
+    wx = int(round(window_mm / sx))
+    wy = int(round(window_mm / sy))
+
+    x0 = max(0, x - wx)
+    x1 = min(volume.shape[1], x + wx)
+    y0 = max(0, y - wy)
+    y1 = min(volume.shape[2], y + wy)
+
+    patch_vol = volume[z, x0:x1, y0:y1]
+    patch_seg = segmentation[z, x0:x1, y0:y1]
+
+    return patch_vol, patch_seg
+
+
 @router.post("/upload")
 async def upload_case(
     file: UploadFile = File(...),
-    patient_id: str = Form(default="anonymous")
+    segmentation_file: UploadFile = File(...),
+    patient_id: str = Form(default="anonymous"),
+    is_molar: bool = Form(default=False)
 ):
     """
-    Accept a CBCT scan file and run the full pipeline.
-    Returns case_id and full SAC classification result.
+    Accept a CBCT scan and pre-computed segmentation.
+    Runs full measurement and SAC classification pipeline.
     """
-    # Validate file type
     allowed_extensions = [".nii", ".nii.gz", ".mha"]
-    filename = file.filename or ""
-    if not any(filename.endswith(ext) for ext in allowed_extensions):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported file type. Allowed: {allowed_extensions}"
-        )
+    for f in [file, segmentation_file]:
+        fname = f.filename or ""
+        if not any(fname.endswith(ext) for ext in allowed_extensions):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file type: {fname}. Allowed: {allowed_extensions}"
+            )
 
-    # Save uploaded file
     case_id = str(uuid.uuid4())
-    save_path = os.path.join(UPLOAD_DIR, f"{case_id}_{filename}")
+    cbct_path = os.path.join(UPLOAD_DIR, f"{case_id}_cbct_{file.filename}")
+    seg_path = os.path.join(UPLOAD_DIR, f"{case_id}_seg_{segmentation_file.filename}")
 
-    with open(save_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    with open(cbct_path, "wb") as f_out:
+        shutil.copyfileobj(file.file, f_out)
+
+    with open(seg_path, "wb") as f_out:
+        shutil.copyfileobj(segmentation_file.file, f_out)
 
     try:
-        # Step 1: Load CBCT
-        volume, spacing = load_cbct(save_path)
+        # Step 1: Load CBCT and segmentation
+        volume, spacing = load_cbct(cbct_path)
+        segmentation, _ = load_cbct(seg_path)
+        segmentation = segmentation.astype(np.uint8)
 
-        # Step 2: Placeholder segmentation — ToothSeg integration coming in Week 3
-        # For now we use a mock segmentation to test the endpoint flow
-        import numpy as np
-        segmentation = np.zeros_like(volume, dtype=np.uint8)
-        mid = [s // 2 for s in volume.shape]
-        segmentation[
-            mid[0]-5:mid[0]+5,
-            mid[1]-10:mid[1],
-            mid[2]-10:mid[2]
-        ] = 1
-        segmentation[
-            mid[0]-5:mid[0]+5,
-            mid[1]-10:mid[1],
-            mid[2]:mid[2]+10
-        ] = 1
+        assert volume.shape == segmentation.shape, \
+            f"Shape mismatch: CBCT {volume.shape} vs seg {segmentation.shape}"
 
-        # Step 3: Get implant site location
-        z, x, y = get_missing_tooth_location(segmentation)
+        # Step 2: Find best slice and missing tooth site
+        z, x, y = get_best_slice_and_site(segmentation)
 
-        # Step 4: Extract local region
-        local_vol, local_seg, bounds = extract_local_region(
+
+        # Step 3: Extract 2D patch around site
+        patch_vol, patch_seg = extract_2d_patch(
             volume, segmentation,
-            site_xyz=(z, x, y),
+            z=z, x=x, y=y,
             spacing=spacing,
             window_mm=20.0
         )
 
-        # Step 5: Compute measurements
+
+        # Step 4: Compute measurements on 2D patch
+        # Wrap patch as single-slice 3D for measurements module
         measurements = compute_measurements(
-            local_volume=local_vol,
-            local_seg=local_seg,
+            local_volume=patch_vol[np.newaxis, :, :],
+            local_seg=patch_seg[np.newaxis, :, :],
             spacing=spacing,
-            is_molar=False
+            is_molar=is_molar
         )
 
-        # Step 6: SAC classification
+        # Step 5: SAC classification
         result = classify_sac(measurements)
 
-        # Store result
         cases_store[case_id] = {
             "case_id": case_id,
             "patient_id": patient_id,
-            "filename": filename,
+            "filename": file.filename,
             "spacing_mm": spacing,
             "result": result
         }
@@ -108,9 +162,6 @@ async def upload_case(
 
 @router.get("/{case_id}")
 def get_case(case_id: str):
-    """
-    Retrieve full results for a specific case.
-    """
     if case_id not in cases_store:
         raise HTTPException(status_code=404, detail="Case not found")
     return cases_store[case_id]
@@ -118,7 +169,4 @@ def get_case(case_id: str):
 
 @router.get("/")
 def get_all_cases():
-    """
-    Retrieve all analyzed cases.
-    """
     return list(cases_store.values())
