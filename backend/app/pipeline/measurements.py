@@ -2,107 +2,146 @@ import numpy as np
 import scipy.ndimage as ndi
 
 
+def extract_views(
+    volume: np.ndarray,
+    segmentation: np.ndarray,
+    z: int,
+    cx: int,
+    cy: int
+) -> dict:
+    """
+    Extract three orthogonal 2D views at the YOLO-detected implant site.
+
+    Volume and segmentation are in (z, y, x) axis ordering.
+    YOLO output: z = axial slice, cx = column (x-axis), cy = row (y-axis)
+
+    Returns:
+        dict with keys: axial, coronal, sagittal
+        Each value is a dict with: img (HU), seg (segmentation mask)
+    """
+    assert volume.shape == segmentation.shape, \
+        "Volume and segmentation shape mismatch"
+
+    return {
+        "axial": {
+            "img": volume[z, :, :],
+            "seg": segmentation[z, :, :],
+        },
+        "coronal": {
+            "img": volume[:, cy, :],
+            "seg": segmentation[:, cy, :],
+        },
+        "sagittal": {
+            "img": volume[:, :, cx],
+            "seg": segmentation[:, :, cx],
+        },
+    }
+
+
 def compute_measurements(
-    local_volume: np.ndarray,
-    local_seg: np.ndarray,
+    volume: np.ndarray,
+    segmentation: np.ndarray,
+    z: int,
+    cx: int,
+    cy: int,
     spacing: tuple[float, float, float],
     is_molar: bool = False
 ) -> dict:
     """
-    Compute all 5 clinical measurements from the local region.
-    Works on the best 2D axial slice within the local region,
-    consistent with how ToothSeg notebook validated measurements.
+    Compute all 5 clinical measurements using three orthogonal views.
+
+    Measurement to view mapping (agreed):
+        Apical Bone          → Sagittal
+        Buccal Wall          → Coronal
+        Ridge Width          → Coronal
+        Interradicular Sep.  → Axial
+        Periapical Lesion    → Sagittal
 
     Args:
-        local_volume: Cropped HU volume around implant site
-        local_seg:    Cropped segmentation around implant site
-        spacing:      (sx, sy, sz) real voxel spacing in mm
+        volume:       Full CBCT volume (z, y, x)
+        segmentation: Full segmentation volume (z, y, x)
+        z:            YOLO best axial slice index
+        cx:           YOLO centroid column (x-axis)
+        cy:           YOLO centroid row (y-axis)
+        spacing:      (sx, sy, sz) voxel spacing in mm
         is_molar:     Whether the implant site is a molar
 
     Returns:
         Dictionary of measurements in mm
     """
-    assert local_volume.shape == local_seg.shape, \
+    assert volume.shape == segmentation.shape, \
         "Volume and segmentation shape mismatch"
     assert all(s > 0 for s in spacing), \
         "Spacing must be positive"
 
     sx, sy, sz = spacing
-
-    # Find the best 2D slice — most teeth voxels
-    teeth_vol = (local_seg == 1)
-    teeth_per_slice = teeth_vol.sum(axis=(1, 2))
-
-    if teeth_per_slice.max() == 0:
-        # No teeth found — use center slice
-        z = local_volume.shape[0] // 2
-    else:
-        z = int(np.argmax(teeth_per_slice))
-
-    # Work on the best 2D slice
-    img_2d = local_volume[z]
-    seg_2d = local_seg[z]
-
-    cx = img_2d.shape[0] // 2
-    cy = img_2d.shape[1] // 2
-
-    # Bone mask from HU threshold
-    bone_2d = img_2d > 200
-
-    # Teeth mask from segmentation
-    teeth_2d = (seg_2d == 1)
-    teeth_zone = ndi.binary_dilation(teeth_2d, iterations=4)
-
-    # Restrict bone to near teeth
-    bone = bone_2d & teeth_zone
+    views = extract_views(volume, segmentation, z, cx, cy)
 
     results = {}
 
     # ------------------------------------------------------------------
-    # 1. APICAL BONE AVAILABILITY
-    # Measure continuous bone below implant apex along vertical axis
+    # 1. APICAL BONE AVAILABILITY — Sagittal view (z, y)
+    # Measure continuous bone below implant apex along z-axis
+    # Anchor point: (z, cy) in sagittal view
     # ------------------------------------------------------------------
-    col = bone[:, cy]
+    sag_img = views["sagittal"]["img"]   # shape (z_total, y_total)
+    sag_seg = views["sagittal"]["seg"]
+
+    sag_bone  = sag_img > 200
+    sag_teeth = (sag_seg == 1)
+    sag_zone  = ndi.binary_dilation(sag_teeth, iterations=4)
+    sag_bone  = sag_bone & sag_zone
+
+    # Column at cy in sagittal view, look downward from z
+    col = sag_bone[z:, cy] if cy < sag_bone.shape[1] else sag_bone[z:, sag_bone.shape[1]//2]
     indices = np.where(col > 0)[0]
-    if len(indices) > 0:
-        apical_px = max(0, indices[-1] - cx)
-    else:
-        apical_px = 0
-    apical_mm = float(apical_px) * sx
+    apical_px = int(indices[-1]) if len(indices) > 0 else 0
+    apical_mm = float(apical_px) * sz
     assert apical_mm >= 0, "Apical bone cannot be negative"
     results["apical_bone_mm"] = round(apical_mm, 2)
 
     # ------------------------------------------------------------------
-    # 2. BUCCAL WALL THICKNESS
-    # Measure bone thickness on the buccal (outer) side
+    # 2. BUCCAL WALL THICKNESS — Coronal view (z, x)
+    # Measure bone on the buccal (outer) side at implant level
+    # Anchor point: (z, cx) in coronal view
     # ------------------------------------------------------------------
-    front = bone[cx, :cy]
-    indices = np.where(front > 0)[0]
+    cor_img = views["coronal"]["img"]    # shape (z_total, x_total)
+    cor_seg = views["coronal"]["seg"]
+
+    cor_bone  = cor_img > 200
+    cor_teeth = (cor_seg == 1)
+    cor_zone  = ndi.binary_dilation(cor_teeth, iterations=4)
+    cor_bone  = cor_bone & cor_zone
+
+    # Row at z in coronal view, measure bone to the left of cx (buccal side)
+    row = cor_bone[z, :cx] if cx < cor_bone.shape[1] else cor_bone[z, :]
+    indices = np.where(row > 0)[0]
     buccal_px = len(indices) if len(indices) > 0 else 0
-    buccal_mm = float(buccal_px) * sy
+    buccal_mm = float(buccal_px) * sx
     assert buccal_mm >= 0, "Buccal thickness cannot be negative"
     results["buccal_wall_mm"] = round(buccal_mm, 2)
 
     # ------------------------------------------------------------------
-    # 3. BUCCOLINGUAL RIDGE WIDTH
+    # 3. BUCCOLINGUAL RIDGE WIDTH — Coronal view (z, x)
     # Measure total horizontal bone span at crest level
+    # Anchor point: row z in coronal view
     # ------------------------------------------------------------------
-    row = bone[cx, :]
+    row = cor_bone[z, :]
     indices = np.where(row > 0)[0]
-    if len(indices) > 1:
-        ridge_px = indices[-1] - indices[0]
-    else:
-        ridge_px = 0
-    ridge_mm = float(ridge_px) * sy
+    ridge_px = int(indices[-1] - indices[0]) if len(indices) > 1 else 0
+    ridge_mm = float(ridge_px) * sx
     assert ridge_mm >= 0, "Ridge width cannot be negative"
     results["ridge_width_mm"] = round(ridge_mm, 2)
 
     # ------------------------------------------------------------------
-    # 4. INTERRADICULAR SEPTUM WIDTH (molars only)
-    # Measure minimum distance between root centroids in mm
+    # 4. INTERRADICULAR SEPTUM WIDTH — Axial view (y, x)
+    # Measure minimum distance between root centroids
+    # Anchor point: axial slice z
     # ------------------------------------------------------------------
     if is_molar:
-        labeled_teeth, num_teeth = ndi.label(teeth_2d)
+        ax_seg   = views["axial"]["seg"]    # shape (y_total, x_total)
+        ax_teeth = (ax_seg == 1)
+        labeled_teeth, num_teeth = ndi.label(ax_teeth)
         if num_teeth >= 2:
             centers = []
             for i in range(1, num_teeth + 1):
@@ -113,7 +152,7 @@ def compute_measurements(
             for i in range(len(centers)):
                 for j in range(i + 1, len(centers)):
                     dist_mm = np.linalg.norm(
-                        (centers[i] - centers[j]) * np.array([sx, sy])
+                        (centers[i] - centers[j]) * np.array([sy, sx])
                     )
                     dists.append(dist_mm)
             septum_mm = float(min(dists))
@@ -125,22 +164,24 @@ def compute_measurements(
         results["septum_width_mm"] = None
 
     # ------------------------------------------------------------------
-    # 5. PERIAPICAL LESION STATUS
+    # 5. PERIAPICAL LESION STATUS — Sagittal view (z, y)
     # Detect low-density regions inside bone near apex
     # ------------------------------------------------------------------
-    low_density = img_2d < 100
-    bone_eroded = ndi.binary_erosion(bone_2d, iterations=1)
-    candidate = low_density & bone_eroded
+    sag_bone_raw = sag_img > 200
+    low_density  = sag_img < 100
+    bone_eroded  = ndi.binary_erosion(sag_bone_raw, iterations=1)
+    candidate    = low_density & bone_eroded
     labeled, num = ndi.label(candidate)
-    lesion_detected = False
-    lesion_size_mm3 = 0.0
+
+    lesion_detected  = False
+    lesion_size_mm3  = 0.0
     if num > 0:
         sizes = [np.sum(labeled == i) for i in range(1, num + 1)]
-        max_size_px = max(sizes)
-        voxel_area_mm2 = sx * sy
-        max_size_mm2 = max_size_px * voxel_area_mm2
-        threshold_mm2 = 80 * (0.4 ** 2)
-        if max_size_mm2 > threshold_mm2:
+        max_size_px  = max(sizes)
+        voxel_area   = sy * sz
+        max_size_mm2 = max_size_px * voxel_area
+        threshold    = 80 * (0.4 ** 2)
+        if max_size_mm2 > threshold:
             lesion_detected = True
             lesion_size_mm3 = round(max_size_mm2, 2)
 
