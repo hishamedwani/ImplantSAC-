@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.cbct_loader import load_cbct
 from app.pipeline.yolo_locator import locate_missing_tooth
+from app.pipeline.toothseg import run_toothseg, determine_is_molar
 from app.pipeline.measurements import compute_measurements
 from app.classification.sac_classifier import classify_sac
 from app.db.database import get_db
@@ -22,46 +23,34 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @router.post("/upload")
 async def upload_case(
     file: UploadFile = File(...),
-    segmentation_file: UploadFile = File(...),
     patient_id: str = Form(default="anonymous"),
-    is_molar: bool = Form(default=False),
     db: Session = Depends(get_db)
 ):
     """
-    Accept a CBCT scan and pre-computed segmentation.
-    Runs YOLO localization, extracts three orthogonal views,
-    computes measurements, and produces SAC classification.
+    Accept a CBCT scan only.
+    Runs full automated pipeline:
+    CBCT → YOLO → ToothSeg → Measurements → SAC Classification
     Saves result to PostgreSQL.
     """
     allowed_extensions = [".nii", ".nii.gz", ".mha"]
-    for f in [file, segmentation_file]:
-        fname = f.filename or ""
-        if not any(fname.endswith(ext) for ext in allowed_extensions):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported file type: {fname}. Allowed: {allowed_extensions}"
-            )
+    fname = file.filename or ""
+    if not any(fname.endswith(ext) for ext in allowed_extensions):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type: {fname}. Allowed: {allowed_extensions}"
+        )
 
-    case_id  = str(uuid.uuid4())
+    case_id   = str(uuid.uuid4())
     cbct_path = os.path.join(UPLOAD_DIR, f"{case_id}_cbct_{file.filename}")
-    seg_path  = os.path.join(UPLOAD_DIR, f"{case_id}_seg_{segmentation_file.filename}")
 
     with open(cbct_path, "wb") as f_out:
         shutil.copyfileobj(file.file, f_out)
 
-    with open(seg_path, "wb") as f_out:
-        shutil.copyfileobj(segmentation_file.file, f_out)
-
     try:
-        # Step 1: Load CBCT and segmentation
-        volume, spacing      = load_cbct(cbct_path)
-        segmentation, _      = load_cbct(seg_path)
-        segmentation         = segmentation.astype(np.uint8)
+        # Step 1: Load CBCT
+        volume, spacing = load_cbct(cbct_path)
 
-        assert volume.shape == segmentation.shape, \
-            f"Shape mismatch: CBCT {volume.shape} vs seg {segmentation.shape}"
-
-        # Step 2: YOLO localization — find missing tooth site
+        # Step 2: YOLO — locate missing tooth
         yolo_result = locate_missing_tooth(
             volume=volume,
             spacing=spacing,
@@ -71,7 +60,20 @@ async def upload_case(
         cx = yolo_result["cx"]
         cy = yolo_result["cy"]
 
-        # Step 3: Compute measurements using three orthogonal views
+        # Step 3: Determine if molar from YOLO centroid position
+        is_molar = determine_is_molar(cx, volume.shape[2])
+
+        # Step 4: ToothSeg — segment crop around YOLO site
+        segmentation = run_toothseg(
+            volume=volume,
+            spacing=spacing,
+            z=z,
+            cx=cx,
+            cy=cy,
+            window=50
+        )
+
+        # Step 5: Compute measurements using three orthogonal views
         measurements = compute_measurements(
             volume=volume,
             segmentation=segmentation,
@@ -82,10 +84,10 @@ async def upload_case(
             is_molar=is_molar
         )
 
-        # Step 4: SAC classification
+        # Step 6: SAC classification
         result = classify_sac(measurements)
 
-        # Step 5: Save to PostgreSQL
+        # Step 7: Save to PostgreSQL
         factors = result["factors"]
         case = Case(
             id=case_id,
@@ -114,8 +116,8 @@ async def upload_case(
         db.refresh(case)
 
         return JSONResponse(content={
-            "case_id":     case_id,
-            "patient_id":  patient_id,
+            "case_id":    case_id,
+            "patient_id": patient_id,
             "yolo": {
                 "z":       z,
                 "cx":      cx,
@@ -124,6 +126,7 @@ async def upload_case(
                 "score":   yolo_result["score"],
                 "z_range": yolo_result["z_range"],
                 "scanner": yolo_result["scanner"],
+                "is_molar": is_molar,
             },
             "result": result
         })
