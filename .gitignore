@@ -20,3 +20,12 @@ desktop.ini
 # IDE
 .vscode/
 .idea/
+
+# Model weights
+backend/models/yolo/*.pt
+backend/models/toothseg/
+backend/models/nnunet_raw/
+backend/models/nnunet_preprocessed/
+
+# Uploaded scan files
+backend/uploads/
