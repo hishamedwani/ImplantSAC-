@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Boolean, DateTime, JSON
+from sqlalchemy import Column, String, Float, Boolean, DateTime, JSON, Integer
 from app.db.database import Base
 
 
@@ -42,3 +42,12 @@ class Case(Base):
 
     # Full result JSON
     full_result = Column(JSON, nullable=False)
+
+    # File paths for MPR viewer
+    cbct_path         = Column(String, nullable=True)
+    segmentation_path = Column(String, nullable=True)
+
+    # YOLO coordinates for MPR viewer
+    yolo_z  = Column(Integer, nullable=True)
+    yolo_cx = Column(Integer, nullable=True)
+    yolo_cy = Column(Integer, nullable=True)

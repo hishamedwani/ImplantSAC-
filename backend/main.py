@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers.cases import router as cases_router
+from app.api.routers.viewer import router as viewer_router
+from app.api.routers.auth import router as auth_router
 from app.db.init_db import init_db
 
 app = FastAPI(
@@ -17,7 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(cases_router, prefix="/api/cases")
+app.include_router(auth_router,   prefix="/api/auth")
+app.include_router(cases_router,  prefix="/api/cases")
+app.include_router(viewer_router, prefix="/api/viewer")
 
 
 @app.on_event("startup")
