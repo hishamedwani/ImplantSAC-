@@ -29,3 +29,6 @@ backend/models/nnunet_preprocessed/
 
 # Uploaded scan files
 backend/uploads/
+
+# Segmentation files
+backend/segmentations/
