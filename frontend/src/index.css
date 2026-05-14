@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+* {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+input {
+  font-family: inherit;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px #0d0d1a inset !important;
+  -webkit-text-fill-color: #F1F5F9 !important;
+  caret-color: #F1F5F9;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
