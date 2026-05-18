@@ -168,7 +168,7 @@ export default function Upload() {
                     </button>
 
                     <p style={{ textAlign: 'center', color: '#475569', fontSize: '0.75rem', marginTop: '1rem' }}>
-                        Processing takes approximately 90 seconds
+                        Processing takes approximately 3-5 minutes
                     </p>
                 </div>
             </main>

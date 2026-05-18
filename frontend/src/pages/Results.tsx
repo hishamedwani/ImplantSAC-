@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { getCase, updateCase } from '../api/client'
+import { getCase } from '../api/client'
 import type { UploadResponse } from '../api/client'
 import Sidebar from '../components/Sidebar'
 import Background from '../components/Background'
@@ -91,8 +91,9 @@ export default function Results() {
     const card: React.CSSProperties = {
         background: 'rgba(255,255,255,0.03)',
         backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.07)',
+        border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: '16px',
+        boxShadow: '0 0 30px rgba(99,102,241,0.08), 0 0 0 1px rgba(99,102,241,0.04)',
     }
 
     return (
@@ -244,10 +245,11 @@ export default function Results() {
                             )
                         })}
                         <p style={{
-                            color: '#64748B', fontSize: '0.65rem', padding: '0.75rem 1.25rem',
-                            lineHeight: 1.5, margin: 0
+                            color: '#94A3B8', fontSize: '0.75rem', padding: '0.75rem 1.25rem',
+                            lineHeight: 1.6, margin: 0, borderTop: '1px solid rgba(255,255,255,0.05)',
+                            fontWeight: 500
                         }}>
-                            {result.disclaimer}
+                            ⚠ {result.disclaimer}
                         </p>
                     </div>
 

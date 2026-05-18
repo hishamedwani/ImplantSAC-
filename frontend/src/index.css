@@ -4,7 +4,8 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-input {
+input,
+textarea {
   font-family: inherit;
 }
 
@@ -24,10 +25,6 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-}
-
-/* Global text color overrides — ensure readability */
-body {
   color: #F1F5F9;
 }
 
@@ -35,22 +32,11 @@ p {
   color: #E2E8F0;
 }
 
-span {
-  color: inherit;
-}
-
-/* Muted text should still be visible */
-.muted {
-  color: #94A3B8;
-}
-
-/* Placeholder text */
 ::placeholder {
   color: #64748B !important;
   opacity: 1;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
 }

@@ -6,9 +6,9 @@ import Sidebar from '../components/Sidebar'
 import Background from '../components/Background'
 
 const CLASS_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-    Straightforward: { color: '#10B981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)' },
-    Advanced: { color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
-    Complex: { color: '#F43F5E', bg: 'rgba(244,63,94,0.1)', border: 'rgba(244,63,94,0.25)' },
+    Straightforward: { color: '#10B981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.3)' },
+    Advanced: { color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' },
+    Complex: { color: '#F43F5E', bg: 'rgba(244,63,94,0.1)', border: 'rgba(244,63,94,0.3)' },
 }
 
 export default function History() {
@@ -45,9 +45,17 @@ export default function History() {
     const card: React.CSSProperties = {
         background: 'rgba(255,255,255,0.03)',
         backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: '16px',
+        boxShadow: '0 0 30px rgba(99,102,241,0.06)',
     }
+
+    const FILTER_BUTTONS = [
+        { label: 'All', color: '#A78BFA', bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.4)' },
+        { label: 'Straightforward', color: '#10B981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)' },
+        { label: 'Advanced', color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' },
+        { label: 'Complex', color: '#F43F5E', bg: 'rgba(244,63,94,0.15)', border: 'rgba(244,63,94,0.4)' },
+    ]
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", position: 'relative' }}>
@@ -59,7 +67,6 @@ export default function History() {
                 overflowY: 'auto', position: 'relative', zIndex: 1, minWidth: 0
             }}>
 
-                {/* Header */}
                 <div style={{
                     display: 'flex', justifyContent: 'space-between',
                     alignItems: 'flex-start', marginBottom: '2rem'
@@ -68,66 +75,51 @@ export default function History() {
                         <h1 style={{
                             color: '#F1F5F9', fontSize: '1.75rem', fontWeight: 700,
                             margin: 0, letterSpacing: '-0.02em'
-                        }}>
-                            History
-                        </h1>
-                        <p style={{ color: '#64748B', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
+                        }}>History</h1>
+                        <p style={{ color: '#94A3B8', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
                             All analyzed cases
                         </p>
                     </div>
-                    <button
-                        onClick={() => navigate('/upload')}
-                        style={{
-                            padding: '0.75rem 1.5rem', borderRadius: '12px', border: 'none',
-                            background: 'linear-gradient(135deg, #6366F1 0%, #00B4D8 100%)',
-                            color: 'white', fontWeight: 700, fontSize: '0.875rem',
-                            cursor: 'pointer', fontFamily: 'inherit',
-                            boxShadow: '0 0 20px rgba(99,102,241,0.3)',
-                        }}
-                    >
-                        + New Case
-                    </button>
+                    <button onClick={() => navigate('/upload')} style={{
+                        padding: '0.75rem 1.5rem', borderRadius: '12px', border: 'none',
+                        background: 'linear-gradient(135deg, #6366F1 0%, #00B4D8 100%)',
+                        color: 'white', fontWeight: 700, fontSize: '0.875rem',
+                        cursor: 'pointer', fontFamily: 'inherit',
+                        boxShadow: '0 0 20px rgba(99,102,241,0.3)',
+                    }}>+ New Case</button>
                 </div>
 
                 {/* Filters */}
                 <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                     <input
-                        type="text"
-                        value={search}
+                        type="text" value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search by patient ID or case ID..."
                         style={{
                             flex: 1, minWidth: '240px', padding: '0.7rem 1rem', borderRadius: '10px',
-                            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(99,102,241,0.2)',
+                            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                             color: '#F1F5F9', fontSize: '0.875rem', outline: 'none',
                             colorScheme: 'dark', fontFamily: 'inherit',
                         }}
                     />
-                    {['All', 'Straightforward', 'Advanced', 'Complex'].map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            style={{
-                                padding: '0.7rem 1rem', borderRadius: '10px', fontSize: '0.8rem',
-                                fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                                border: `1px solid ${filter === f ? '#6366F1' : 'rgba(255,255,255,0.08)'}`,
-                                background: filter === f ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)',
-                                color: filter === f ? '#A78BFA' : '#64748B',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            {f}
-                        </button>
-                    ))}
-                    <button
-                        onClick={() => setSortDesc(!sortDesc)}
-                        style={{
+                    {FILTER_BUTTONS.map(f => (
+                        <button key={f.label} onClick={() => setFilter(f.label)} style={{
                             padding: '0.7rem 1rem', borderRadius: '10px', fontSize: '0.8rem',
                             fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            background: 'rgba(255,255,255,0.03)', color: '#64748B',
-                        }}
-                    >
+                            border: `1px solid ${filter === f.label ? f.border : 'rgba(255,255,255,0.08)'}`,
+                            background: filter === f.label ? f.bg : 'rgba(255,255,255,0.03)',
+                            color: filter === f.label ? f.color : '#94A3B8',
+                            transition: 'all 0.2s',
+                        }}>
+                            {f.label}
+                        </button>
+                    ))}
+                    <button onClick={() => setSortDesc(!sortDesc)} style={{
+                        padding: '0.7rem 1rem', borderRadius: '10px', fontSize: '0.8rem',
+                        fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(255,255,255,0.03)', color: '#94A3B8',
+                    }}>
                         {sortDesc ? '↓ Newest' : '↑ Oldest'}
                     </button>
                 </div>
@@ -141,7 +133,7 @@ export default function History() {
                     }}>
                         {['Patient ID', 'File', 'Classification', 'Date', ''].map(h => (
                             <span key={h} style={{
-                                color: '#475569', fontSize: '0.68rem',
+                                color: '#64748B', fontSize: '0.68rem',
                                 fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em'
                             }}>
                                 {h}
@@ -150,33 +142,26 @@ export default function History() {
                     </div>
 
                     {loading ? (
-                        <div style={{ padding: '3rem', textAlign: 'center', color: '#64748B' }}>Loading...</div>
+                        <div style={{ padding: '3rem', textAlign: 'center', color: '#94A3B8' }}>Loading...</div>
                     ) : filtered.length === 0 ? (
                         <div style={{ padding: '4rem', textAlign: 'center' }}>
-                            <p style={{ color: '#64748B', marginBottom: '1rem' }}>
+                            <p style={{ color: '#94A3B8', marginBottom: '1rem' }}>
                                 {cases.length === 0 ? 'No cases yet.' : 'No cases match your filter.'}
                             </p>
                             {cases.length === 0 && (
-                                <button
-                                    onClick={() => navigate('/upload')}
-                                    style={{
-                                        padding: '0.75rem 1.5rem', borderRadius: '12px', border: 'none',
-                                        background: 'linear-gradient(135deg, #6366F1 0%, #00B4D8 100%)',
-                                        color: 'white', fontWeight: 600, fontSize: '0.875rem',
-                                        cursor: 'pointer', fontFamily: 'inherit',
-                                    }}
-                                >
-                                    Upload your first scan
-                                </button>
+                                <button onClick={() => navigate('/upload')} style={{
+                                    padding: '0.75rem 1.5rem', borderRadius: '12px', border: 'none',
+                                    background: 'linear-gradient(135deg, #6366F1 0%, #00B4D8 100%)',
+                                    color: 'white', fontWeight: 600, fontSize: '0.875rem',
+                                    cursor: 'pointer', fontFamily: 'inherit',
+                                }}>Upload your first scan</button>
                             )}
                         </div>
                     ) : (
                         filtered.map((c, i) => {
                             const cls = CLASS_COLORS[c.classification] || CLASS_COLORS.Complex
                             return (
-                                <div
-                                    key={c.case_id}
-                                    onClick={() => navigate(`/history/${c.case_id}`)}
+                                <div key={c.case_id} onClick={() => navigate(`/history/${c.case_id}`)}
                                     style={{
                                         display: 'grid', gridTemplateColumns: '1fr 1fr 160px 180px 80px',
                                         padding: '1rem 1.5rem', alignItems: 'center', cursor: 'pointer',
@@ -191,7 +176,7 @@ export default function History() {
                                         {c.patient_id}
                                     </span>
                                     <span style={{
-                                        color: '#64748B', fontSize: '0.8rem',
+                                        color: '#94A3B8', fontSize: '0.8rem',
                                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '1rem'
                                     }}>
                                         {c.filename}
@@ -201,10 +186,8 @@ export default function History() {
                                         padding: '0.3rem 0.75rem', borderRadius: '20px', fontSize: '0.72rem',
                                         fontWeight: 600, color: cls.color, background: cls.bg,
                                         border: `1px solid ${cls.border}`, width: 'fit-content',
-                                    }}>
-                                        ● {c.classification}
-                                    </span>
-                                    <span style={{ color: '#64748B', fontSize: '0.8rem' }}>
+                                    }}>● {c.classification}</span>
+                                    <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>
                                         {formatDate(c.created_at)}
                                     </span>
                                     <span style={{ color: '#6366F1', fontSize: '0.8rem', textAlign: 'right' }}>
@@ -216,7 +199,7 @@ export default function History() {
                     )}
                 </div>
 
-                <p style={{ color: '#374151', fontSize: '0.75rem', marginTop: '1rem' }}>
+                <p style={{ color: '#64748B', fontSize: '0.75rem', marginTop: '1rem' }}>
                     {filtered.length} case{filtered.length !== 1 ? 's' : ''} shown
                 </p>
             </main>
