@@ -8,7 +8,6 @@ import Processing from './pages/Processing'
 import Results from './pages/Results'
 import History from './pages/History'
 import HistoryDetail from './pages/HistoryDetail'
-import Review from './pages/Review'
 import Settings from './pages/Settings'
 import UserStats from './pages/UserStats'
 
@@ -29,7 +28,6 @@ function AppRoutes() {
       <Route path="/results/:caseId" element={<ProtectedRoute><Results /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/history/:caseId" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
-      <Route path="/review" element={<ProtectedRoute><Review /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/settings/users/:userId" element={<ProtectedRoute><UserStats /></ProtectedRoute>} />
     </Routes>

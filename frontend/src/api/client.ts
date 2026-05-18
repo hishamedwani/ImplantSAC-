@@ -78,6 +78,8 @@ export interface CaseSummary {
     patient_id: string
     filename: string
     classification: string
+    ai_classification: string
+    is_overridden: boolean
     created_at: string
 }
 

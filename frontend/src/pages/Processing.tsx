@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { uploadCase } from '../api/client'
 import Sidebar from '../components/Sidebar'
@@ -21,11 +21,17 @@ export default function Processing() {
     const [progress, setProgress] = useState(0)
     const [error, setError] = useState('')
 
+    const uploadStarted = useRef(false)
+
     useEffect(() => {
         if (!file) { navigate('/upload'); return }
+        if (uploadStarted.current) return
+        uploadStarted.current = true
 
         const totalDuration = STAGES.reduce((a, s) => a + s.duration, 0)
         let elapsed = 0
+
+
 
         const interval = setInterval(() => {
             elapsed += 0.5

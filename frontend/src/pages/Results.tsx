@@ -244,36 +244,33 @@ export default function Results() {
                                 </div>
                             )
                         })}
-                        <p style={{
-                            color: '#94A3B8', fontSize: '0.75rem', padding: '0.75rem 1.25rem',
-                            lineHeight: 1.6, margin: 0, borderTop: '1px solid rgba(255,255,255,0.05)',
-                            fontWeight: 500
-                        }}>
-                            ⚠ {result.disclaimer}
-                        </p>
                     </div>
 
-                    {/* Reasoning Chain */}
-                    <div style={{ ...card, padding: '1.25rem' }}>
-                        <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 1rem' }}>
-                            Reasoning Chain
-                        </h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                            {result.reasoning.map((line, i) => (
-                                <p key={i} style={{
-                                    color: i === result.reasoning.length - 1 ? '#A78BFA' : '#F1F5F9',
-                                    fontSize: '0.75rem', margin: 0, lineHeight: 1.6,
-                                    fontWeight: i === result.reasoning.length - 1 ? 600 : 400,
-                                    paddingBottom: '0.6rem',
-                                    borderBottom: i < result.reasoning.length - 1
-                                        ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                                }}>
-                                    {line}
-                                </p>
-                            ))}
+                    {/* Reasoning Chain + Disclaimer */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ ...card, padding: '1.25rem', flex: 1 }}>
+                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 1rem' }}>
+                                Reasoning Chain
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                {result.reasoning.map((line, i) => (
+                                    <p key={i} style={{
+                                        color: i === result.reasoning.length - 1 ? '#A78BFA' : '#F1F5F9',
+                                        fontSize: '0.75rem', margin: 0, lineHeight: 1.6,
+                                        fontWeight: i === result.reasoning.length - 1 ? 600 : 400,
+                                        paddingBottom: '0.6rem',
+                                        borderBottom: i < result.reasoning.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                                    }}>
+                                        {line}
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                        <div style={{ ...card, padding: '1.25rem', border: '1px solid rgba(245,158,11,0.25)', boxShadow: '0 0 20px rgba(245,158,11,0.08)' }}>
+                            <p style={{ color: '#F59E0B', fontSize: '0.8rem', fontWeight: 700, margin: '0 0 0.5rem' }}>⚠ Clinical Disclaimer</p>
+                            <p style={{ color: '#E2E8F0', fontSize: '0.82rem', lineHeight: 1.7, margin: 0, fontWeight: 500 }}>{result.disclaimer}</p>
                         </div>
                     </div>
-
                     {/* Detection Details */}
                     <div style={{ ...card, padding: '1.25rem' }}>
                         <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 1rem' }}>

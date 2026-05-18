@@ -5,7 +5,6 @@ const NAV_ITEMS = [
     { path: '/dashboard', label: 'Dashboard', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg> },
     { path: '/upload', label: 'New Case', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg> },
     { path: '/history', label: 'History', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> },
-    { path: '/review', label: 'Review', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg> },
     { path: '/settings', label: 'Settings', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" /></svg> },
 ]
 
@@ -32,7 +31,10 @@ export default function Sidebar() {
                 padding: '1.5rem 1.5rem 1.25rem',
                 borderBottom: '1px solid rgba(139,92,246,0.1)',
             }}>
-                <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                <h1 style={{
+                    margin: 0, fontSize: '1.4rem', fontWeight: 800,
+                    letterSpacing: '-0.02em', lineHeight: 1
+                }}>
                     <span style={{ color: '#F1F5F9' }}>Implant</span>
                     <span style={{ color: '#00B4D8', textShadow: '0 0 20px rgba(0,180,216,0.5)' }}>SAC</span>
                 </h1>
@@ -45,13 +47,14 @@ export default function Sidebar() {
             </div>
 
             {/* Nav */}
-            <nav style={{ flex: 1, padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <nav style={{
+                flex: 1, padding: '1rem 0.75rem',
+                display: 'flex', flexDirection: 'column', gap: '0.25rem'
+            }}>
                 {NAV_ITEMS.map(item => {
                     const active = location.pathname === item.path
                     return (
-                        <button
-                            key={item.path}
-                            onClick={() => navigate(item.path)}
+                        <button key={item.path} onClick={() => navigate(item.path)}
                             style={{
                                 width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
                                 padding: '0.75rem 1rem', borderRadius: '12px', border: 'none',
@@ -59,7 +62,7 @@ export default function Sidebar() {
                                 fontSize: '0.875rem', fontWeight: active ? 600 : 400,
                                 transition: 'all 0.2s',
                                 background: active ? 'rgba(99,102,241,0.2)' : 'transparent',
-                                color: active ? '#A78BFA' : '#64748B',
+                                color: active ? '#A78BFA' : '#94A3B8',
                                 boxShadow: active ? 'inset 0 0 0 1px rgba(99,102,241,0.3), 0 0 12px rgba(99,102,241,0.15)' : 'none',
                             }}
                             onMouseEnter={e => {
@@ -71,11 +74,11 @@ export default function Sidebar() {
                             onMouseLeave={e => {
                                 if (!active) {
                                     e.currentTarget.style.background = 'transparent'
-                                    e.currentTarget.style.color = '#64748B'
+                                    e.currentTarget.style.color = '#94A3B8'
                                 }
                             }}
                         >
-                            <span style={{ color: active ? '#A78BFA' : '#475569', flexShrink: 0 }}>
+                            <span style={{ color: active ? '#A78BFA' : '#64748B', flexShrink: 0 }}>
                                 {item.icon}
                             </span>
                             {item.label}
@@ -85,14 +88,10 @@ export default function Sidebar() {
             </nav>
 
             {/* User + Logout */}
-            <div style={{
-                padding: '0.75rem',
-                borderTop: '1px solid rgba(139,92,246,0.1)',
-            }}>
+            <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(139,92,246,0.1)' }}>
                 <div style={{
                     padding: '0.75rem 1rem', marginBottom: '0.5rem',
-                    background: 'rgba(99,102,241,0.06)',
-                    borderRadius: '12px',
+                    background: 'rgba(99,102,241,0.06)', borderRadius: '12px',
                     border: '1px solid rgba(99,102,241,0.1)',
                 }}>
                     <p style={{
@@ -106,24 +105,23 @@ export default function Sidebar() {
                         {user?.role}
                     </p>
                 </div>
-                <button
-                    onClick={logout}
-                    style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
-                        padding: '0.75rem 1rem', borderRadius: '12px', border: 'none',
-                        cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem',
-                        color: '#64748B', background: 'transparent', transition: 'all 0.2s',
-                    }}
+                <button onClick={logout} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.75rem 1rem', borderRadius: '12px', border: 'none',
+                    cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem',
+                    color: '#94A3B8', background: 'transparent', transition: 'all 0.2s',
+                }}
                     onMouseEnter={e => {
                         e.currentTarget.style.background = 'rgba(244,63,94,0.08)'
                         e.currentTarget.style.color = '#F43F5E'
                     }}
                     onMouseLeave={e => {
                         e.currentTarget.style.background = 'transparent'
-                        e.currentTarget.style.color = '#64748B'
+                        e.currentTarget.style.color = '#94A3B8'
                     }}
                 >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                         <polyline points="16 17 21 12 16 7" />
                         <line x1="21" y1="12" x2="9" y2="12" />

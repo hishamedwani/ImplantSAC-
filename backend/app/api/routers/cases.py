@@ -206,11 +206,13 @@ def get_all_cases(db: Session = Depends(get_db)):
     cases = db.query(Case).order_by(Case.created_at.desc()).all()
     return [
         {
-            "case_id":        c.id,
-            "patient_id":     c.patient_id,
-            "filename":       c.filename,
-            "classification": c.classification,
-            "created_at":     c.created_at.isoformat()
+            "case_id":               c.id,
+            "patient_id":            c.patient_id,
+            "filename":              c.filename,
+            "classification":        c.override_classification or c.classification,
+            "ai_classification":     c.classification,
+            "is_overridden":         c.override_classification is not None and c.override_classification != c.classification,
+            "created_at":            c.created_at.isoformat()
         }
         for c in cases
     ]

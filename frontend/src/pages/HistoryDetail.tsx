@@ -71,16 +71,13 @@ export default function HistoryDetail() {
         backdropFilter: 'blur(20px)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: '16px',
-        boxShadow: '0 0 30px rgba(99,102,241,0.08), 0 0 0 1px rgba(99,102,241,0.04)',
+        boxShadow: '0 0 30px rgba(99,102,241,0.06)',
     }
 
     if (loading) return (
         <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", position: 'relative' }}>
             <Background /><Sidebar />
-            <main style={{
-                marginLeft: '224px', flex: 1, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', position: 'relative', zIndex: 1
-            }}>
+            <main style={{ marginLeft: '224px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
                 <p style={{ color: '#94A3B8' }}>Loading case...</p>
             </main>
         </div>
@@ -89,10 +86,7 @@ export default function HistoryDetail() {
     if (!data) return (
         <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", position: 'relative' }}>
             <Background /><Sidebar />
-            <main style={{
-                marginLeft: '224px', flex: 1, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', position: 'relative', zIndex: 1
-            }}>
+            <main style={{ marginLeft: '224px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
                 <p style={{ color: '#F43F5E' }}>Case not found.</p>
             </main>
         </div>
@@ -100,84 +94,47 @@ export default function HistoryDetail() {
 
     const effectiveCls = data.override_classification || data.result.classification
     const cls = CLASS_STYLE[effectiveCls] || CLASS_STYLE.Complex
+    const isOverridden = !!(data.override_classification && data.override_classification !== data.result.classification)
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", position: 'relative' }}>
             <Background />
             <Sidebar />
-
-            <main style={{
-                marginLeft: '224px', flex: 1, padding: '2rem',
-                overflowY: 'auto', position: 'relative', zIndex: 1, minWidth: 0
-            }}>
+            <main style={{ marginLeft: '224px', flex: 1, padding: '2rem', overflowY: 'auto', position: 'relative', zIndex: 1, minWidth: 0 }}>
 
                 {/* Header */}
-                <div style={{
-                    display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', marginBottom: '1.5rem'
-                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <div>
-                        <button onClick={() => navigate('/history')} style={{
-                            background: 'none', border: 'none', color: '#6366F1',
-                            fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit',
-                            padding: 0, marginBottom: '0.5rem', display: 'block'
-                        }}>
-                            ← Back to History
-                        </button>
-                        <h1 style={{
-                            color: '#F1F5F9', fontSize: '1.75rem', fontWeight: 700,
-                            margin: 0, letterSpacing: '-0.02em'
-                        }}>
-                            Case Detail
-                        </h1>
-                        <p style={{ color: '#94A3B8', fontSize: '0.8rem', margin: '0.25rem 0 0' }}>
-                            Patient: {data.patient_id} · Case: {caseId?.slice(0, 8)}
-                        </p>
+                        <button onClick={() => navigate('/history')} style={{ background: 'none', border: 'none', color: '#6366F1', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit', padding: 0, marginBottom: '0.5rem', display: 'block' }}>← Back to History</button>
+                        <h1 style={{ color: '#F1F5F9', fontSize: '1.75rem', fontWeight: 700, margin: 0, letterSpacing: '-0.02em' }}>Case Detail</h1>
+                        <p style={{ color: '#94A3B8', fontSize: '0.8rem', margin: '0.25rem 0 0' }}>Patient: {data.patient_id} · Case: {caseId?.slice(0, 8)}</p>
                     </div>
-                    <div style={{
-                        padding: '0.5rem 1.25rem', borderRadius: '10px',
-                        border: `1px solid ${cls.border}`, boxShadow: cls.glow,
-                    }}>
-                        <span style={{ color: cls.color, fontWeight: 700, fontSize: '1rem' }}>
-                            {effectiveCls}
-                            {data.override_classification && data.override_classification !== data.result.classification && (
-                                <span style={{ color: '#94A3B8', fontSize: '0.7rem', fontWeight: 400, marginLeft: '0.5rem' }}>
-                                    (overridden)
-                                </span>
-                            )}
-                        </span>
+                    <div style={{ padding: '0.5rem 1.25rem', borderRadius: '10px', border: `1px solid ${cls.border}`, boxShadow: cls.glow }}>
+                        <span style={{ color: cls.color, fontWeight: 700, fontSize: '1rem' }}>{effectiveCls}</span>
+                        {isOverridden && <span style={{ color: '#94A3B8', fontSize: '0.7rem', fontWeight: 400, marginLeft: '0.5rem' }}>(overridden)</span>}
                     </div>
                 </div>
 
                 {/* Classification badge */}
-                <div style={{
-                    ...card, padding: '1.5rem 2rem', marginBottom: '1.5rem',
-                    border: `1px solid ${cls.border}`, boxShadow: cls.glow,
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
+                <div style={{ ...card, padding: '1.5rem 2rem', marginBottom: '1.5rem', border: `1px solid ${cls.border}`, boxShadow: cls.glow, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                        <p style={{
-                            color: '#94A3B8', fontSize: '0.7rem', fontWeight: 600,
-                            textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 0.4rem'
-                        }}>
-                            {data.override_classification ? 'Overridden Classification' : 'AI Classification'}
+                        <p style={{ color: '#94A3B8', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 0.4rem' }}>
+                            {isOverridden ? 'Overridden Classification' : 'AI Classification'}
                         </p>
-                        <h2 style={{
-                            color: cls.color, fontSize: '2.5rem', fontWeight: 900,
-                            margin: 0, letterSpacing: '0.05em', textShadow: `0 0 30px ${cls.color}60`
-                        }}>
+                        <h2 style={{ color: cls.color, fontSize: '2.5rem', fontWeight: 900, margin: 0, letterSpacing: '0.05em', textShadow: `0 0 30px ${cls.color}60` }}>
                             {effectiveCls.toUpperCase()}
                         </h2>
+                        {isOverridden && (
+                            <p style={{
+                                color: data.result.classification === 'Complex' ? '#F43F5E' : data.result.classification === 'Advanced' ? '#F59E0B' : '#10B981',
+                                fontSize: '0.75rem', margin: '0.5rem 0 0', fontWeight: 600,
+                            }}>
+                                AI Classification: {data.result.classification}
+                            </p>
+                        )}
                     </div>
-
-                    {/* Override buttons */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                        <p style={{
-                            color: '#94A3B8', fontSize: '0.7rem', fontWeight: 600,
-                            textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0
-                        }}>
-                            Override
-                        </p>
+                        <p style={{ color: '#94A3B8', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Override</p>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                             {['Straightforward', 'Advanced', 'Complex'].map(c => {
                                 const cc = CLASS_COLORS[c]
@@ -200,26 +157,12 @@ export default function HistoryDetail() {
                                 )
                             })}
                         </div>
-                        {data.override_classification && data.override_classification !== data.result.classification && (
-                            <p style={{ color: '#F59E0B', fontSize: '0.68rem', margin: 0 }}>
-                                AI: {data.result.classification}
-                            </p>
-                        )}
                     </div>
                 </div>
 
                 {/* MPR Viewer */}
-                <div style={{
-                    ...card, padding: '1.5rem', marginBottom: '1.5rem',
-                    border: '1px solid rgba(99,102,241,0.2)',
-                    boxShadow: '0 0 30px rgba(99,102,241,0.08)',
-                }}>
-                    <p style={{
-                        color: '#F1F5F9', fontSize: '0.85rem', fontWeight: 600,
-                        margin: '0 0 1rem'
-                    }}>
-                        CBCT Viewer — Axial · Coronal · Sagittal
-                    </p>
+                <div style={{ ...card, padding: '1.5rem', marginBottom: '1.5rem', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 0 30px rgba(99,102,241,0.08)' }}>
+                    <p style={{ color: '#F1F5F9', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 1rem' }}>CBCT Viewer — Axial · Coronal · Sagittal</p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
                         <MPRViewer caseId={caseId!} layout="horizontal" />
                     </div>
@@ -231,52 +174,27 @@ export default function HistoryDetail() {
                     {/* Measurements */}
                     <div style={{ ...card, overflow: 'hidden' }}>
                         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: 0 }}>
-                                Measurements
-                            </h3>
+                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: 0 }}>Measurements</h3>
                         </div>
                         {FACTORS.map((factor, i) => {
                             const risk = getRisk(factor.key) as keyof typeof RISK_COLORS
                             const colors = RISK_COLORS[risk] || RISK_COLORS['N/A']
                             return (
-                                <div key={factor.key} style={{
-                                    padding: '0.75rem 1.25rem',
-                                    borderBottom: '1px solid rgba(255,255,255,0.04)',
-                                    background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
-                                }}>
+                                <div key={factor.key} style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.04)', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: '#F1F5F9', fontSize: '0.8rem', fontWeight: 500 }}>
-                                            {factor.label}
-                                        </span>
-                                        <span style={{
-                                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                                            padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.68rem',
-                                            fontWeight: 700, color: colors.color, background: colors.bg,
-                                            border: `1px solid ${colors.border}`,
-                                        }}>
-                                            ● {risk}
-                                        </span>
+                                        <span style={{ color: '#F1F5F9', fontSize: '0.8rem', fontWeight: 500 }}>{factor.label}</span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.68rem', fontWeight: 700, color: colors.color, background: colors.bg, border: `1px solid ${colors.border}` }}>● {risk}</span>
                                     </div>
-                                    <p style={{ color: '#00B4D8', fontSize: '0.8rem', fontFamily: 'monospace', margin: '0.2rem 0 0' }}>
-                                        {getMeasurement(factor.key)}
-                                    </p>
+                                    <p style={{ color: '#00B4D8', fontSize: '0.8rem', fontFamily: 'monospace', margin: '0.2rem 0 0' }}>{getMeasurement(factor.key)}</p>
                                 </div>
                             )
                         })}
-                        <p style={{
-                            color: '#94A3B8', fontSize: '0.7rem', padding: '0.75rem 1.25rem',
-                            lineHeight: 1.6, margin: 0, borderTop: '1px solid rgba(255,255,255,0.05)'
-                        }}>
-                            ⚠ {data.result.disclaimer}
-                        </p>
                     </div>
 
-                    {/* Reasoning + Notes */}
+                    {/* Reasoning Chain + Disclaimer */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ ...card, padding: '1.25rem', flex: 1 }}>
-                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 1rem' }}>
-                                Reasoning Chain
-                            </h3>
+                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 1rem' }}>Reasoning Chain</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 {data.result.reasoning.map((line, i) => (
                                     <p key={i} style={{
@@ -284,53 +202,43 @@ export default function HistoryDetail() {
                                         fontSize: '0.75rem', margin: 0, lineHeight: 1.6,
                                         fontWeight: i === data.result.reasoning.length - 1 ? 600 : 400,
                                         paddingBottom: '0.5rem',
-                                        borderBottom: i < data.result.reasoning.length - 1
-                                            ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                                    }}>
-                                        {line}
-                                    </p>
+                                        borderBottom: i < data.result.reasoning.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                                    }}>{line}</p>
                                 ))}
                             </div>
                         </div>
+                        <div style={{ ...card, padding: '1.25rem', border: '1px solid rgba(245,158,11,0.25)', boxShadow: '0 0 20px rgba(245,158,11,0.08)' }}>
+                            <p style={{ color: '#F59E0B', fontSize: '0.8rem', fontWeight: 700, margin: '0 0 0.5rem' }}>⚠ Clinical Disclaimer</p>
+                            <p style={{ color: '#E2E8F0', fontSize: '0.82rem', lineHeight: 1.7, margin: 0, fontWeight: 500 }}>{data.result.disclaimer}</p>
+                        </div>
                     </div>
 
-                    {/* Detection + Notes */}
+                    {/* Detection Details + Notes */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ ...card, padding: '1.25rem' }}>
-                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 1rem' }}>
-                                Detection Details
-                            </h3>
+                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 1rem' }}>Detection Details</h3>
                             {[
                                 { label: 'Case ID', value: caseId?.slice(0, 8) },
                                 { label: 'Patient', value: data.patient_id },
+                                { label: 'Scanner', value: data.yolo?.scanner || 'N/A' },
+                                { label: 'Confidence', value: data.yolo?.conf ? `${(data.yolo.conf * 100).toFixed(1)}%` : 'N/A' },
+                                { label: 'Z Range', value: (data.yolo?.z_range && data.yolo.z_range[1] > 0) ? `${data.yolo.z_range[0]}–${data.yolo.z_range[1]}` : 'N/A' },
+                                { label: 'Site', value: data.yolo?.is_molar ? 'Molar' : 'Anterior' },
                             ].map(item => (
-                                <div key={item.label} style={{
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)',
-                                }}>
+                                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>{item.label}</span>
                                     <span style={{ color: '#F1F5F9', fontSize: '0.8rem', fontWeight: 500 }}>{item.value}</span>
                                 </div>
                             ))}
                         </div>
-
-                        {/* Clinician Notes */}
                         <div style={{ ...card, padding: '1.25rem', flex: 1 }}>
-                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 0.75rem' }}>
-                                Clinician Notes
-                            </h3>
+                            <h3 style={{ color: '#F1F5F9', fontSize: '0.875rem', fontWeight: 600, margin: '0 0 0.75rem' }}>Clinician Notes</h3>
                             <textarea
                                 value={notes}
                                 onChange={e => { setNotes(e.target.value); setNotesSaved(false) }}
                                 placeholder="Add clinical notes..."
                                 rows={4}
-                                style={{
-                                    width: '100%', padding: '0.75rem', borderRadius: '10px',
-                                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(99,102,241,0.2)',
-                                    color: '#F1F5F9', fontSize: '0.8rem', outline: 'none',
-                                    boxSizing: 'border-box', colorScheme: 'dark', fontFamily: 'inherit',
-                                    resize: 'vertical', lineHeight: 1.6,
-                                }}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(99,102,241,0.2)', color: '#F1F5F9', fontSize: '0.8rem', outline: 'none', boxSizing: 'border-box', colorScheme: 'dark', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6 }}
                                 onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.5)'}
                                 onBlur={e => e.target.style.borderColor = 'rgba(99,102,241,0.2)'}
                             />
@@ -347,13 +255,7 @@ export default function HistoryDetail() {
                                         }
                                     }}
                                     disabled={notesLoading}
-                                    style={{
-                                        padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer',
-                                        fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 600,
-                                        border: `1px solid ${notesSaved ? 'rgba(16,185,129,0.3)' : 'rgba(99,102,241,0.3)'}`,
-                                        background: notesSaved ? 'rgba(16,185,129,0.1)' : 'rgba(99,102,241,0.1)',
-                                        color: notesSaved ? '#10B981' : '#A78BFA',
-                                    }}
+                                    style={{ padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 600, border: `1px solid ${notesSaved ? 'rgba(16,185,129,0.3)' : 'rgba(99,102,241,0.3)'}`, background: notesSaved ? 'rgba(16,185,129,0.1)' : 'rgba(99,102,241,0.1)', color: notesSaved ? '#10B981' : '#A78BFA' }}
                                 >
                                     {notesLoading ? 'Saving...' : notesSaved ? '✓ Saved' : 'Save Notes'}
                                 </button>

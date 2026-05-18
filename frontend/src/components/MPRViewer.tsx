@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { getVolumeInfo, getSliceUrl } from '../api/client'
 import type { VolumeInfo } from '../api/client'
 
@@ -8,17 +8,19 @@ interface MPRViewerProps {
 }
 
 function SlicePanel({
-    caseId, view, index, max, label, onChange,
+    caseId, view, index, max, label, yoloIndex, onChange,
 }: {
     caseId: string
     view: 'axial' | 'coronal' | 'sagittal'
     index: number
     max: number
     label: string
+    yoloIndex: number
     onChange: (v: number) => void
 }) {
     const [imgUrl, setImgUrl] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
         setLoading(true)
@@ -29,8 +31,14 @@ function SlicePanel({
         img.src = url
     }, [caseId, view, index])
 
+    const handleSlider = useCallback((val: number) => {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => onChange(val), 80)
+    }, [onChange])
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {/* Label + index + jump button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{
                     color: '#94A3B8', fontSize: '0.68rem', fontWeight: 600,
@@ -38,11 +46,28 @@ function SlicePanel({
                 }}>
                     {label}
                 </span>
-                <span style={{ color: '#6366F1', fontSize: '0.68rem', fontFamily: 'monospace' }}>
-                    {index} / {max}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ color: '#6366F1', fontSize: '0.68rem', fontFamily: 'monospace' }}>
+                        {index} / {max}
+                    </span>
+                    <button
+                        onClick={() => onChange(yoloIndex)}
+                        title="Jump to implant site"
+                        style={{
+                            padding: '0.15rem 0.5rem', borderRadius: '6px', border: 'none',
+                            background: 'rgba(99,102,241,0.2)', color: '#A78BFA',
+                            fontSize: '0.62rem', fontWeight: 600, cursor: 'pointer',
+                            fontFamily: 'inherit', transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.4)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(99,102,241,0.2)'}
+                    >
+                        ⊕ Site
+                    </button>
+                </div>
             </div>
 
+            {/* Image */}
             <div style={{
                 width: '100%', aspectRatio: '1', background: '#000',
                 borderRadius: '10px', overflow: 'hidden', position: 'relative',
@@ -68,11 +93,20 @@ function SlicePanel({
                 )}
             </div>
 
-            <input
-                type="range" min={0} max={max} value={index}
-                onChange={e => onChange(Number(e.target.value))}
-                style={{ width: '100%', accentColor: '#6366F1', cursor: 'pointer', height: '4px' }}
-            />
+            {/* Slider */}
+            <div style={{ position: 'relative', padding: '0.25rem 0' }}>
+                <input
+                    type="range" min={0} max={max} value={index}
+                    onChange={e => handleSlider(Number(e.target.value))}
+                    onMouseUp={e => onChange(Number((e.target as HTMLInputElement).value))}
+                    style={{
+                        width: '100%', cursor: 'pointer', height: '6px',
+                        accentColor: '#6366F1',
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                    }}
+                />
+            </div>
         </div>
     )
 }
@@ -99,8 +133,8 @@ export default function MPRViewer({ caseId, layout = 'horizontal' }: MPRViewerPr
 
     if (loading) return (
         <div style={{
-            padding: '2rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.8rem',
-            gridColumn: '1 / -1'
+            padding: '2rem', textAlign: 'center', color: '#94A3B8',
+            fontSize: '0.8rem', gridColumn: '1 / -1'
         }}>
             Loading viewer...
         </div>
@@ -126,12 +160,30 @@ export default function MPRViewer({ caseId, layout = 'horizontal' }: MPRViewerPr
     const panels = (
         <>
             <SlicePanel caseId={caseId} view="axial"
-                index={axialIdx} max={nz - 1} label="Axial" onChange={setAxialIdx} />
+                index={axialIdx} max={nz - 1} label="Axial"
+                yoloIndex={info.yolo.z ?? 0} onChange={setAxialIdx} />
             <SlicePanel caseId={caseId} view="coronal"
-                index={coronalIdx} max={ny - 1} label="Coronal" onChange={setCoronalIdx} />
+                index={coronalIdx} max={ny - 1} label="Coronal"
+                yoloIndex={info.yolo.cy ?? 0} onChange={setCoronalIdx} />
             <SlicePanel caseId={caseId} view="sagittal"
-                index={sagittalIdx} max={nx - 1} label="Sagittal" onChange={setSagittalIdx} />
-            <style>{`@keyframes mpr-spin { to { transform: rotate(360deg) } }`}</style>
+                index={sagittalIdx} max={nx - 1} label="Sagittal"
+                yoloIndex={info.yolo.cx ?? 0} onChange={setSagittalIdx} />
+            <style>{`
+        @keyframes mpr-spin { to { transform: rotate(360deg) } }
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 16px; height: 16px;
+          border-radius: 50%;
+          background: #6366F1;
+          cursor: pointer;
+          box-shadow: 0 0 6px rgba(99,102,241,0.6);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+          height: 4px;
+          border-radius: 2px;
+          background: rgba(99,102,241,0.2);
+        }
+      `}</style>
         </>
     )
 

@@ -181,12 +181,21 @@ export default function History() {
                                     }}>
                                         {c.filename}
                                     </span>
-                                    <span style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                                        padding: '0.3rem 0.75rem', borderRadius: '20px', fontSize: '0.72rem',
-                                        fontWeight: 600, color: cls.color, background: cls.bg,
-                                        border: `1px solid ${cls.border}`, width: 'fit-content',
-                                    }}>● {c.classification}</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                        <span style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                                            padding: '0.3rem 0.75rem', borderRadius: '20px', fontSize: '0.72rem',
+                                            fontWeight: 600, color: cls.color, background: cls.bg,
+                                            border: `1px solid ${cls.border}`, width: 'fit-content',
+                                        }}>● {c.classification}</span>
+                                        {c.is_overridden && (
+                                            <span style={{
+                                                color: '#F59E0B', fontSize: '0.65rem', fontWeight: 600,
+                                            }}>
+                                                ✎ Overridden from {c.ai_classification}
+                                            </span>
+                                        )}
+                                    </div>
                                     <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>
                                         {formatDate(c.created_at)}
                                     </span>
