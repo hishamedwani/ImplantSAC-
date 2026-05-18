@@ -48,17 +48,23 @@ def run_toothseg(
     raw_dir          = _get_env("TOOTHSEG_RAW")
     preprocessed_dir = _get_env("TOOTHSEG_PREPROCESSED")
 
-    # Set nnU-Net environment variables
     env = os.environ.copy()
     env["nnUNet_results"]       = results_dir
     env["nnUNet_raw"]           = raw_dir
     env["nnUNet_preprocessed"]  = preprocessed_dir
     env["CUDA_VISIBLE_DEVICES"] = ""  # Force CPU
 
+    # Find nnUNetv2_predict in the venv
+    import sys
+    venv_scripts = str(Path(sys.executable).parent)
+    predict_cmd  = str(Path(venv_scripts) / "nnUNetv2_predict.exe")
+    if not Path(predict_cmd).exists():
+        predict_cmd = "nnUNetv2_predict"
+
     # Create unique temp dirs for this inference run
-    run_id    = str(uuid.uuid4())[:8]
-    input_dir  = Path(raw_dir) / f"input_{run_id}"
-    output_dir = Path(raw_dir) / f"output_{run_id}"
+    run_id     = str(uuid.uuid4())[:6]
+    input_dir  = Path("C:/tmp") / f"is_in_{run_id}"
+    output_dir = Path("C:/tmp") / f"is_out_{run_id}"
     input_dir.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -85,7 +91,7 @@ def run_toothseg(
 
         # Run nnU-Net inference
         result = subprocess.run([
-            "nnUNetv2_predict",
+            predict_cmd,
             "-i", str(input_dir),
             "-o", str(output_dir),
             "-d", "112",
