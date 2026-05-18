@@ -158,7 +158,21 @@ def get_case(case_id: str, db: Session = Depends(get_db)):
     case = db.query(Case).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
-    return case.full_result
+    return {
+        "case_id":    case.id,
+        "patient_id": case.patient_id,
+        "yolo": {
+            "z":       case.yolo_z,
+            "cx":      case.yolo_cx,
+            "cy":      case.yolo_cy,
+            "conf":    0,
+            "score":   0,
+            "z_range": [0, 0],
+            "scanner": "Unknown",
+            "is_molar": False,
+        },
+        "result": case.full_result,
+    }
 
 
 @router.get("/")
