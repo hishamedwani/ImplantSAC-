@@ -69,6 +69,8 @@ export interface UploadResponse {
     patient_id: string
     yolo: YoloResult
     result: CaseResult
+    clinician_notes?: string | null
+    override_classification?: string | null
 }
 
 export interface CaseSummary {
@@ -141,4 +143,11 @@ export const getVolumeInfo = async (caseId: string): Promise<VolumeInfo> => {
 export const getSliceUrl = (caseId: string, view: string, index: number): string => {
     const token = localStorage.getItem('token')
     return `${API_BASE}/api/viewer/${caseId}/slice?view=${view}&index=${index}&token=${token}`
+}
+
+export const updateCase = async (
+    caseId: string,
+    update: { clinician_notes?: string; override_classification?: string }
+): Promise<void> => {
+    await api.patch(`/api/cases/${caseId}`, update)
 }

@@ -13,6 +13,7 @@ from app.pipeline.measurements import compute_measurements
 from app.classification.sac_classifier import classify_sac
 from app.db.database import get_db
 from app.db.models import Case
+from pydantic import BaseModel
 
 router = APIRouter(tags=["cases"])
 
@@ -161,6 +162,8 @@ def get_case(case_id: str, db: Session = Depends(get_db)):
     return {
         "case_id":    case.id,
         "patient_id": case.patient_id,
+        "clinician_notes":         case.clinician_notes,
+        "override_classification": case.override_classification,
         "yolo": {
             "z":       case.yolo_z,
             "cx":      case.yolo_cx,
@@ -174,6 +177,28 @@ def get_case(case_id: str, db: Session = Depends(get_db)):
         "result": case.full_result,
     }
 
+class CaseUpdate(BaseModel):
+    clinician_notes:         str | None = None
+    override_classification: str | None = None
+
+
+@router.patch("/{case_id}")
+def update_case(case_id: str, update: CaseUpdate, db: Session = Depends(get_db)):
+    """Update clinician notes and/or override classification for a case."""
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    if update.clinician_notes is not None:
+        case.clinician_notes = update.clinician_notes
+    if update.override_classification is not None:
+        case.override_classification = update.override_classification
+    db.commit()
+    db.refresh(case)
+    return {
+        "case_id": case.id,
+        "clinician_notes": case.clinician_notes,
+        "override_classification": case.override_classification,
+    }
 
 @router.get("/")
 def get_all_cases(db: Session = Depends(get_db)):

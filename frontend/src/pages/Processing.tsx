@@ -29,7 +29,7 @@ export default function Processing() {
 
         const interval = setInterval(() => {
             elapsed += 0.5
-            const overall = Math.min((elapsed / 90) * 100, 95)
+            const overall = Math.min((elapsed / 240) * 100, 95)
             setProgress(overall)
             let cum = 0
             for (let i = 0; i < STAGES.length; i++) {
@@ -72,7 +72,7 @@ export default function Processing() {
                         Analyzing Scan
                     </h1>
                     <p style={{ color: '#64748B', fontSize: '0.875rem', margin: '0 0 2.5rem' }}>
-                        {file?.name} · ~90 seconds
+                        {file?.name} · ~3-5 minutes
                     </p>
 
                     {error ? (

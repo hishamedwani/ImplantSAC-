@@ -43,11 +43,15 @@ class Case(Base):
     # Full result JSON
     full_result = Column(JSON, nullable=False)
 
+    # Clinician additions
+    clinician_notes = Column(String, nullable=True)
+    override_classification = Column(String, nullable=True)
+
     # File paths for MPR viewer
-    cbct_path         = Column(String, nullable=True)
+    cbct_path = Column(String, nullable=True)
     segmentation_path = Column(String, nullable=True)
 
     # YOLO coordinates for MPR viewer
-    yolo_z  = Column(Integer, nullable=True)
+    yolo_z = Column(Integer, nullable=True)
     yolo_cx = Column(Integer, nullable=True)
     yolo_cy = Column(Integer, nullable=True)

@@ -4,6 +4,7 @@ import { getCase } from '../api/client'
 import type { UploadResponse } from '../api/client'
 import Sidebar from '../components/Sidebar'
 import Background from '../components/Background'
+import MPRViewer from '../components/MPRViewer'
 
 const RISK_COLORS = {
     Green: { color: '#10B981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)', glow: 'rgba(16,185,129,0.2)' },
@@ -246,7 +247,7 @@ export default function HistoryDetail() {
                     {/* Right */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-                        {/* MPR Viewer placeholder */}
+                        {/* MPR Viewer */}
                         <div style={{
                             ...card, padding: '1.25rem',
                             border: '1px solid rgba(99,102,241,0.15)',
@@ -257,28 +258,7 @@ export default function HistoryDetail() {
                             }}>
                                 MPR Viewer
                             </p>
-                            <div style={{
-                                background: 'rgba(99,102,241,0.05)',
-                                border: '1px dashed rgba(99,102,241,0.2)',
-                                borderRadius: '12px', padding: '2rem', textAlign: 'center',
-                            }}>
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-                                    stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                                    style={{ marginBottom: '0.75rem' }}>
-                                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                                    <circle cx="12" cy="12" r="3" />
-                                    <line x1="12" y1="3" x2="12" y2="9" />
-                                    <line x1="12" y1="15" x2="12" y2="21" />
-                                    <line x1="3" y1="12" x2="9" y2="12" />
-                                    <line x1="15" y1="12" x2="21" y2="12" />
-                                </svg>
-                                <p style={{ color: '#6366F1', fontSize: '0.8rem', fontWeight: 600, margin: '0 0 0.25rem' }}>
-                                    Interactive MPR Viewer
-                                </p>
-                                <p style={{ color: '#374151', fontSize: '0.72rem', margin: 0 }}>
-                                    Available after database migration
-                                </p>
-                            </div>
+                            <MPRViewer caseId={caseId!} layout="vertical" />
                         </div>
 
                         {/* Reasoning */}
