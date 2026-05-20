@@ -108,6 +108,11 @@ async def upload_case(
             yolo_z=z,
             yolo_cx=cx,
             yolo_cy=cy,
+            yolo_conf=yolo_result["conf"],
+            yolo_scanner=yolo_result["scanner"],
+            yolo_is_molar=is_molar,
+            yolo_z_min=int(yolo_result["z_range"][0]),
+            yolo_z_max=int(yolo_result["z_range"][1]),
             apical_bone_mm=factors["apical_bone"]["measurement_mm"],
             buccal_wall_mm=factors["buccal_wall"]["measurement_mm"],
             ridge_width_mm=factors["ridge_width"]["measurement_mm"],
@@ -165,14 +170,14 @@ def get_case(case_id: str, db: Session = Depends(get_db)):
         "clinician_notes":         case.clinician_notes,
         "override_classification": case.override_classification,
         "yolo": {
-            "z":       case.yolo_z,
-            "cx":      case.yolo_cx,
-            "cy":      case.yolo_cy,
-            "conf":    0,
-            "score":   0,
-            "z_range": [0, 0],
-            "scanner": "Unknown",
-            "is_molar": False,
+            "z":        case.yolo_z,
+            "cx":       case.yolo_cx,
+            "cy":       case.yolo_cy,
+            "conf":     case.yolo_conf or 0,
+            "score":    0,
+            "z_range":  [case.yolo_z_min or 0, case.yolo_z_max or 0],
+            "scanner":  case.yolo_scanner or "Unknown",
+            "is_molar": case.yolo_is_molar or False,
         },
         "result": case.full_result,
     }
@@ -216,3 +221,20 @@ def get_all_cases(db: Session = Depends(get_db)):
         }
         for c in cases
     ]
+
+@router.delete("/{case_id}")
+def delete_case(case_id: str, db: Session = Depends(get_db)):
+    """Delete a case and its associated files."""
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    # Delete files from disk
+    if case.cbct_path and os.path.exists(case.cbct_path):
+        os.remove(case.cbct_path)
+    if case.segmentation_path and os.path.exists(case.segmentation_path):
+        os.remove(case.segmentation_path)
+    
+    db.delete(case)
+    db.commit()
+    return {"deleted": case_id}

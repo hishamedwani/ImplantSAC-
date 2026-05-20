@@ -153,3 +153,7 @@ export const updateCase = async (
 ): Promise<void> => {
     await api.patch(`/api/cases/${caseId}`, update)
 }
+
+export const deleteCase = async (caseId: string): Promise<void> => {
+  await api.delete(`/api/cases/${caseId}`)
+}

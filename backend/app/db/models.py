@@ -52,6 +52,11 @@ class Case(Base):
     segmentation_path = Column(String, nullable=True)
 
     # YOLO coordinates for MPR viewer
-    yolo_z = Column(Integer, nullable=True)
-    yolo_cx = Column(Integer, nullable=True)
-    yolo_cy = Column(Integer, nullable=True)
+    yolo_z        = Column(Integer, nullable=True)
+    yolo_cx       = Column(Integer, nullable=True)
+    yolo_cy       = Column(Integer, nullable=True)
+    yolo_conf     = Column(Float,   nullable=True)
+    yolo_scanner  = Column(String,  nullable=True)
+    yolo_is_molar = Column(Boolean, nullable=True)
+    yolo_z_min    = Column(Integer, nullable=True)
+    yolo_z_max    = Column(Integer, nullable=True)

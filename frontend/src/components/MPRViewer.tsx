@@ -170,18 +170,36 @@ export default function MPRViewer({ caseId, layout = 'horizontal' }: MPRViewerPr
                 yoloIndex={info.yolo.cx ?? 0} onChange={setSagittalIdx} />
             <style>{`
         @keyframes mpr-spin { to { transform: rotate(360deg) } }
+        input[type=range] {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 4px;
+          border-radius: 2px;
+          background: rgba(99,102,241,0.2);
+          outline: none;
+        }
         input[type=range]::-webkit-slider-thumb {
           -webkit-appearance: none;
+          appearance: none;
           width: 16px; height: 16px;
           border-radius: 50%;
           background: #6366F1;
           cursor: pointer;
           box-shadow: 0 0 6px rgba(99,102,241,0.6);
+          margin-top: -6px;
         }
         input[type=range]::-webkit-slider-runnable-track {
           height: 4px;
           border-radius: 2px;
           background: rgba(99,102,241,0.2);
+        }
+        input[type=range]::-moz-range-thumb {
+          width: 16px; height: 16px;
+          border-radius: 50%;
+          background: #6366F1;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 0 6px rgba(99,102,241,0.6);
         }
       `}</style>
         </>

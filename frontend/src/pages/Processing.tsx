@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { uploadCase } from '../api/client'
 import Sidebar from '../components/Sidebar'
@@ -12,51 +12,54 @@ const STAGES = [
     { label: 'Classifying', desc: 'Applying ITI SAC classification thresholds', duration: 10 },
 ]
 
+const TOTAL = STAGES.reduce((a, s) => a + s.duration, 0)
+
 export default function Processing() {
     const navigate = useNavigate()
     const location = useLocation()
     const { file, patientId } = location.state || {}
 
     const [currentStage, setCurrentStage] = useState(0)
-    const [progress, setProgress] = useState(0)
+    const [progress, setProgress] = useState(3)
     const [error, setError] = useState('')
-
-    const uploadStarted = useRef(false)
+    const uploadDone = useRef(false)
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const elapsedRef = useRef(0)
 
     useEffect(() => {
         if (!file) { navigate('/upload'); return }
-        if (uploadStarted.current) return
-        uploadStarted.current = true
+        if (uploadDone.current) return
+        uploadDone.current = true
 
-        const totalDuration = STAGES.reduce((a, s) => a + s.duration, 0)
-        let elapsed = 0
-
-
-
-        const interval = setInterval(() => {
-            elapsed += 0.5
-            const overall = Math.min((elapsed / 240) * 100, 95)
+        // Start progress animation
+        intervalRef.current = setInterval(() => {
+            elapsedRef.current += 0.5
+            const overall = Math.min(3 + (elapsedRef.current / 240) * 92, 95)
             setProgress(overall)
+
             let cum = 0
             for (let i = 0; i < STAGES.length; i++) {
-                cum += (STAGES[i].duration / totalDuration) * 100
+                cum += (STAGES[i].duration / TOTAL) * 100
                 if (overall < cum) { setCurrentStage(i); break }
             }
         }, 500)
 
+        // Start actual upload
         uploadCase(file, patientId || 'anonymous')
             .then(result => {
-                clearInterval(interval)
+                if (intervalRef.current) clearInterval(intervalRef.current)
                 setProgress(100)
                 setCurrentStage(STAGES.length - 1)
                 setTimeout(() => navigate(`/results/${result.case_id}`, { state: { result } }), 800)
             })
             .catch(err => {
-                clearInterval(interval)
+                if (intervalRef.current) clearInterval(intervalRef.current)
                 setError(err?.response?.data?.detail || 'Processing failed. Please try again.')
             })
 
-        return () => clearInterval(interval)
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current)
+        }
     }, [])
 
     return (
@@ -77,34 +80,29 @@ export default function Processing() {
                     }}>
                         Analyzing Scan
                     </h1>
-                    <p style={{ color: '#64748B', fontSize: '0.875rem', margin: '0 0 2.5rem' }}>
+                    <p style={{ color: '#94A3B8', fontSize: '0.875rem', margin: '0 0 2.5rem' }}>
                         {file?.name} · ~3-5 minutes
                     </p>
 
                     {error ? (
                         <div style={{
                             padding: '1.5rem', borderRadius: '16px', marginBottom: '1.5rem',
-                            background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.3)',
+                            background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.3)'
                         }}>
                             <p style={{ color: '#F43F5E', fontWeight: 600, margin: '0 0 0.5rem' }}>Processing Failed</p>
                             <p style={{ color: '#94A3B8', fontSize: '0.875rem', margin: '0 0 1rem' }}>{error}</p>
-                            <button
-                                onClick={() => navigate('/upload')}
-                                style={{
-                                    padding: '0.6rem 1.25rem', borderRadius: '10px', border: 'none',
-                                    background: 'rgba(244,63,94,0.15)', color: '#F43F5E',
-                                    fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit',
-                                }}
-                            >
-                                ← Try Again
-                            </button>
+                            <button onClick={() => navigate('/upload')} style={{
+                                padding: '0.6rem 1.25rem', borderRadius: '10px', border: 'none',
+                                background: 'rgba(244,63,94,0.15)', color: '#F43F5E',
+                                fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit',
+                            }}>← Try Again</button>
                         </div>
                     ) : (
                         <>
                             {/* Progress bar */}
                             <div style={{
                                 background: 'rgba(255,255,255,0.06)', borderRadius: '100px',
-                                height: '6px', marginBottom: '2.5rem', overflow: 'hidden',
+                                height: '6px', marginBottom: '2.5rem', overflow: 'hidden'
                             }}>
                                 <div style={{
                                     height: '100%', borderRadius: '100px',
@@ -123,28 +121,17 @@ export default function Processing() {
                                     return (
                                         <div key={stage.label} style={{
                                             display: 'flex', alignItems: 'center', gap: '1rem',
-                                            padding: '1rem 1.25rem', borderRadius: '14px',
-                                            transition: 'all 0.3s',
-                                            background: active
-                                                ? 'rgba(99,102,241,0.1)'
-                                                : done
-                                                    ? 'rgba(16,185,129,0.05)'
-                                                    : 'rgba(255,255,255,0.02)',
+                                            padding: '1rem 1.25rem', borderRadius: '14px', transition: 'all 0.3s',
+                                            background: active ? 'rgba(99,102,241,0.1)' : done ? 'rgba(16,185,129,0.05)' : 'rgba(255,255,255,0.02)',
                                             border: `1px solid ${active ? 'rgba(99,102,241,0.3)' : done ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)'}`,
                                             boxShadow: active ? '0 0 20px rgba(99,102,241,0.1)' : 'none',
                                         }}>
-                                            {/* Step indicator */}
                                             <div style={{
                                                 width: '36px', height: '36px', borderRadius: '50%',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                flexShrink: 0, fontSize: '0.8rem', fontWeight: 700,
-                                                transition: 'all 0.3s',
-                                                background: done
-                                                    ? '#10B981'
-                                                    : active
-                                                        ? 'linear-gradient(135deg, #6366F1, #00B4D8)'
-                                                        : 'rgba(255,255,255,0.06)',
-                                                color: done || active ? 'white' : '#475569',
+                                                flexShrink: 0, fontSize: '0.8rem', fontWeight: 700, transition: 'all 0.3s',
+                                                background: done ? '#10B981' : active ? 'linear-gradient(135deg, #6366F1, #00B4D8)' : 'rgba(255,255,255,0.06)',
+                                                color: done || active ? 'white' : '#64748B',
                                                 boxShadow: active ? '0 0 12px rgba(99,102,241,0.4)' : 'none',
                                             }}>
                                                 {done ? (
@@ -153,25 +140,15 @@ export default function Processing() {
                                                     </svg>
                                                 ) : i + 1}
                                             </div>
-
                                             <div style={{ flex: 1 }}>
                                                 <p style={{
-                                                    margin: 0, fontSize: '0.9rem', fontWeight: 600,
-                                                    color: done ? '#10B981' : active ? '#F1F5F9' : '#475569',
-                                                    transition: 'color 0.3s',
+                                                    margin: 0, fontSize: '0.9rem', fontWeight: 600, transition: 'color 0.3s',
+                                                    color: done ? '#10B981' : active ? '#F1F5F9' : '#64748B',
                                                 }}>
                                                     {stage.label}
-                                                    {active && (
-                                                        <span style={{ marginLeft: '0.5rem' }}>
-                                                            <span style={{ animation: 'pulse 1s ease-in-out infinite', display: 'inline-block' }}>●</span>
-                                                        </span>
-                                                    )}
+                                                    {active && <span style={{ marginLeft: '0.5rem', animation: 'pulse 1s ease-in-out infinite', display: 'inline-block' }}>●</span>}
                                                 </p>
-                                                <p style={{
-                                                    margin: '0.15rem 0 0', fontSize: '0.75rem',
-                                                    color: active ? '#94A3B8' : '#374151',
-                                                    transition: 'color 0.3s',
-                                                }}>
+                                                <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: active ? '#94A3B8' : '#374151', transition: 'color 0.3s' }}>
                                                     {stage.desc}
                                                 </p>
                                             </div>
@@ -180,7 +157,7 @@ export default function Processing() {
                                 })}
                             </div>
 
-                            <p style={{ textAlign: 'center', color: '#374151', fontSize: '0.75rem', marginTop: '1.5rem' }}>
+                            <p style={{ textAlign: 'center', color: '#64748B', fontSize: '0.75rem', marginTop: '1.5rem' }}>
                                 {Math.round(progress)}% complete — Please do not close this page
                             </p>
                         </>
@@ -188,12 +165,7 @@ export default function Processing() {
                 </div>
             </main>
 
-            <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1 }
-          50%       { opacity: 0.3 }
-        }
-      `}</style>
+            <style>{`@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }`}</style>
         </div>
     )
 }
